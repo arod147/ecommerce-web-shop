@@ -9,18 +9,20 @@ import { loadStripe } from "@stripe/stripe-js";
 
 import Review from "./Review";
 
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
+const stripe = new loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
 
-const PaymentFrom = ({
+// const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
+
+const PaymentForm = ({
   checkoutToken,
-  shippingData,
-  backStep,
-  onCaptureCheckout,
   nextStep,
+  backStep,
+  shippingData,
+  onCaptureCheckout,
 }) => {
   const handleSubmit = async (event, elements, stripe) => {
     event.preventDefault();
-    console.log(shippingData);
+
     if (!stripe || !elements) return;
 
     const cardElement = elements.getElement(CardElement);
@@ -30,8 +32,10 @@ const PaymentFrom = ({
       card: cardElement,
     });
 
+    console.log(paymentMethod);
+
     if (error) {
-      console.log(error);
+      console.log("[error]", error);
     } else {
       const orderData = {
         line_items: checkoutToken.live.line_items,
@@ -41,7 +45,7 @@ const PaymentFrom = ({
           email: shippingData.email,
         },
         shipping: {
-          name: "Primary",
+          name: "International",
           street: shippingData.address1,
           town_city: shippingData.city,
           county_state: shippingData.shippingSubdivision,
@@ -50,14 +54,23 @@ const PaymentFrom = ({
         },
         fulfillment: { shipping_method: shippingData.shippingOption },
         payment: {
+          // gateway: "test_gateway",
+          // card: {
+          //   number: "4242424242424242",
+          //   expiry_month: "02",
+          //   expiry_year: "24",
+          //   cvc: "123",
+          //   postal_zip_code: "94107",
+          // },
           gateway: "stripe",
           stripe: {
             payment_method_id: paymentMethod.id,
           },
         },
       };
-      console.log(orderData);
+
       onCaptureCheckout(checkoutToken.id, orderData);
+
       nextStep();
     }
   };
@@ -67,15 +80,14 @@ const PaymentFrom = ({
       <Review checkoutToken={checkoutToken} />
       <Divider />
       <Typography variant="h6" gutterBottom style={{ margin: "20px 0" }}>
-        Payment methods
+        Payment method
       </Typography>
-      <Elements stripe={stripePromise}>
+      <Elements stripe={stripe}>
         <ElementsConsumer>
           {({ elements, stripe }) => (
             <form onSubmit={(e) => handleSubmit(e, elements, stripe)}>
               <CardElement />
-              <br />
-              <br />
+              <br /> <br />
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <Button variant="outlined" onClick={backStep}>
                   Back
@@ -86,7 +98,7 @@ const PaymentFrom = ({
                   disabled={!stripe}
                   color="primary"
                 >
-                  Pay {checkoutToken.live.subtotal.formatted_width_symbol}
+                  Pay {checkoutToken.live.subtotal.formatted_with_symbol}
                 </Button>
               </div>
             </form>
@@ -97,4 +109,4 @@ const PaymentFrom = ({
   );
 };
 
-export default PaymentFrom;
+export default PaymentForm;
